@@ -13,6 +13,7 @@ import "./App.css";
 import { Cake } from "./components/Cake";
 import { CakeActions } from "./components/CakeActions";
 import { Name } from "./components/Name";
+import { CongratsMessage } from "./components/CongratsMessage";
 import Joyride, { ACTIONS, CallBackProps } from "react-joyride";
 
 // const version = import.meta.env.PACKAGE_VERSION;
@@ -21,53 +22,15 @@ const src = new URL("/assets/hbd2.mp3", import.meta.url).href;
 
 const steps = [
   {
-    target: "#name",
-    content: "This is the input to enter the name.",
-    placement: "bottom",
-    disableBeacon: true,
-  },
-  {
     target: "#candle",
     content: "Blow on the Lightning port to extinguish the candle.",
     placement: "bottom",
-  },
-  {
-    target: "#start",
-    content: "Press start to play music and light the candle.",
-    placement: "top",
-  },
-  {
-    target: "#pause",
-    content: "Press pause if you want the music to pause temporarily.",
-    placement: "top",
-  },
-  {
-    target: "#stop",
-    content: "Press stop if you want to cancel temporarily.",
-    placement: "top",
-  },
-  {
-    target: "#toggle-candle",
-    content: "Press button if you want to light or blow out the candle.",
-    placement: "top",
-  },
-  {
-    target: "#share",
-    content: "Change the name and click 'Share' to send the gift to anyone.",
-    placement: "top",
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    disableBeacon: true,
+  }
 ] as any;
 
-const sharedSteps = [
-  {
-    target: "#start",
-    content: "Click here",
-    placement: "top",
-    disableBeacon: true,
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-] as any;
+// Empty steps for the second Joyride component
+const sharedSteps = [] as any;
 
 function App() {
   const [candleVisible, setCandleVisible] = useState(false);
@@ -80,10 +43,8 @@ function App() {
   const [run, setRun] = useState(true);
   const [shareMode, setShareMode] = useState(false);
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState("Huynh Nhat Nam");
   const nameRef = useRef<HTMLInputElement>(null);
-
-  const visibility = shareMode || playing
 
   const lightCandle = useCallback(() => setCandleVisible(true), []);
 
@@ -214,6 +175,38 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    // Set candle visible right away on first load
+    setCandleVisible(true);
+    
+    const handleFirstClick = () => {
+      startAudio();
+      setCandleVisible(true);
+      setRun(true);
+      window.removeEventListener("click", handleFirstClick);
+    };
+
+    window.addEventListener("click", handleFirstClick);
+
+    return () => {
+      window.removeEventListener("click", handleFirstClick);
+    };
+  }, [startAudio]);
+
+  useEffect(() => {
+    startAudio();
+    setRun(true); // Ensure steps are shown on initial load
+  }, [startAudio]);
+
+  const actionsVisibility = playing && !paused; // Hide buttons when not playing
+
+  // Set default visibility to false
+  const [, setButtonsVisible] = useState(false);
+
+  useEffect(() => {
+    setButtonsVisible(actionsVisibility);
+  }, [actionsVisibility]);
+
   return (
     <div
       style={{
@@ -227,35 +220,7 @@ function App() {
       <Joyride
         styles={{
           options: {
-            zIndex: shareMode ? 10000 : -10000,
-          },
-          buttonSkip: {
-            outline: 0,
-          },
-          buttonNext: {
-            outline: 0,
-          },
-          buttonBack: {
-            outline: 0,
-          },
-          buttonClose: {
-            outline: 0,
-          },
-        }}
-        steps={sharedSteps}
-        run={run}
-        showSkipButton
-        continuous
-        callback={handleJoyrideCallback}
-        hideBackButton
-        hideCloseButton
-        showProgress
-        spotlightClicks
-      />
-      <Joyride
-        styles={{
-          options: {
-            zIndex: !shareMode ? 10000 : -10000,
+            zIndex: shareMode ? 10000 : 1000, // Ensure steps are visible
           },
           buttonSkip: {
             outline: 0,
@@ -271,12 +236,10 @@ function App() {
           },
         }}
         steps={steps}
-        run={run}
         showSkipButton
-        continuous
         callback={handleJoyrideCallback}
         hideBackButton
-        hideCloseButton
+        hideCloseButton={false}
         showProgress
         spotlightClicks
       />
@@ -296,6 +259,7 @@ function App() {
           }}
         />
         <Cake {...{ candleVisible }} />
+        <CongratsMessage name={name} playing={playing} />
       </div>
 
       <div
@@ -312,7 +276,7 @@ function App() {
           loop
           style={{
             zIndex: 20,
-            visibility: visibility ? "visible" : "hidden",
+            visibility: actionsVisibility ? "visible" : "hidden",
             width: 400,
           }}
         />
@@ -332,18 +296,33 @@ function App() {
           loop
           style={{
             zIndex: 30,
-            visibility: visibility ? "visible" : "hidden",
+            visibility: actionsVisibility ? "visible" : "hidden",
             width: 400,
           }}
         />
       </div>
 
+      {/* Hidden elements for Joyride steps to target */}
+      <div 
+        id="start" 
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "10px",
+          height: "10px",
+          opacity: 0
+        }}
+      ></div>
+      
       <div
         style={{
           position: "absolute",
           bottom: "1.25%",
           left: "50%",
           transform: "translateX(-50%)",
+          opacity: 0, // Make it invisible but still present in the DOM
+          pointerEvents: "none" // Prevent interaction
         }}
       >
         <CakeActions
