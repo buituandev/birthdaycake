@@ -30,8 +30,6 @@ const steps = [
 ] as any;
 
 // Empty steps for the second Joyride component
-const sharedSteps = [] as any;
-
 function App() {
   const [candleVisible, setCandleVisible] = useState(false);
 
